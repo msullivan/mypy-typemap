@@ -1,8 +1,8 @@
 [case testTypeComprehensionBasic]
 # Test basic type comprehension over a tuple
-from typing import Iter
 
-x: tuple[*[list[T] for T in Iter[tuple[int, str, bool]]]]
+
+x: tuple[*[list[T] for T in tuple[int, str, bool]]]
 reveal_type(x)  # N: Revealed type is "tuple[builtins.list[builtins.int], builtins.list[builtins.str], builtins.list[builtins.bool]]"
 
 [builtins fixtures/typelevel.pyi]
@@ -10,10 +10,10 @@ reveal_type(x)  # N: Revealed type is "tuple[builtins.list[builtins.int], builti
 
 [case testTypeComprehensionWithCondition]
 # Test type comprehension with IsAssignable condition
-from typing import Iter, IsAssignable
+from typing import IsAssignable
 
 # Filter to only types that are subtypes of int (just int in this case)
-x: tuple[*[list[T] for T in Iter[tuple[int, str, float]] if IsAssignable[T, int]]]
+x: tuple[*[list[T] for T in tuple[int, str, float] if IsAssignable[T, int]]]
 reveal_type(x)  # N: Revealed type is "tuple[builtins.list[builtins.int]]"
 
 [builtins fixtures/typelevel.pyi]
@@ -21,9 +21,9 @@ reveal_type(x)  # N: Revealed type is "tuple[builtins.list[builtins.int]]"
 
 [case testTypeComprehensionFilterSubtypeObject]
 # Test type comprehension filtering subtypes of object (everything passes)
-from typing import Iter, IsAssignable
+from typing import IsAssignable
 
-x: tuple[*[T for T in Iter[tuple[int, str, bool]] if IsAssignable[T, object]]]
+x: tuple[*[T for T in tuple[int, str, bool] if IsAssignable[T, object]]]
 reveal_type(x)  # N: Revealed type is "tuple[builtins.int, builtins.str, builtins.bool]"
 
 [builtins fixtures/typelevel.pyi]
@@ -31,10 +31,10 @@ reveal_type(x)  # N: Revealed type is "tuple[builtins.int, builtins.str, builtin
 
 [case testTypeComprehensionFilterNone]
 # Test type comprehension where no items pass the condition
-from typing import Iter, IsAssignable
+from typing import IsAssignable
 
 # No type in the tuple is a subtype of str (str is not in the tuple)
-x: tuple[*[T for T in Iter[tuple[int, float, bool]] if IsAssignable[T, str]]]
+x: tuple[*[T for T in tuple[int, float, bool] if IsAssignable[T, str]]]
 reveal_type(x)  # N: Revealed type is "tuple[()]"
 
 [builtins fixtures/typelevel.pyi]
@@ -42,9 +42,9 @@ reveal_type(x)  # N: Revealed type is "tuple[()]"
 
 [case testTypeComprehensionSingleElement]
 # Test type comprehension over single-element tuple
-from typing import Iter
 
-x: tuple[*[list[T] for T in Iter[tuple[int]]]]
+
+x: tuple[*[list[T] for T in tuple[int]]]
 reveal_type(x)  # N: Revealed type is "tuple[builtins.list[builtins.int]]"
 
 [builtins fixtures/typelevel.pyi]
@@ -52,10 +52,10 @@ reveal_type(x)  # N: Revealed type is "tuple[builtins.list[builtins.int]]"
 
 [case testTypeComprehensionTransform]
 # Test type comprehension that transforms types
-from typing import Iter
+
 
 # Wrap each type in a tuple
-x: tuple[*[tuple[T, T] for T in Iter[tuple[int, str]]]]
+x: tuple[*[tuple[T, T] for T in tuple[int, str]]]
 reveal_type(x)  # N: Revealed type is "tuple[tuple[builtins.int, builtins.int], tuple[builtins.str, builtins.str]]"
 
 [builtins fixtures/typelevel.pyi]
@@ -64,9 +64,9 @@ reveal_type(x)  # N: Revealed type is "tuple[tuple[builtins.int, builtins.int], 
 [case testTypeComprehensionInTypeAlias]
 # flags: --python-version 3.12
 # Test type comprehension in a type alias
-from typing import Iter
 
-type Listify[*Ts] = tuple[*[list[T] for T in Iter[tuple[*Ts]]]]
+
+type Listify[*Ts] = tuple[*[list[T] for T in tuple[*Ts]]]
 
 x: Listify[int, str, bool]
 reveal_type(x)  # N: Revealed type is "tuple[builtins.list[builtins.int], builtins.list[builtins.str], builtins.list[builtins.bool]]"
@@ -76,14 +76,14 @@ reveal_type(x)  # N: Revealed type is "tuple[builtins.list[builtins.int], builti
 
 [case testDictComprehensionNewTypedDict]
 # Test dict comprehension in type context with NewTypedDict
-from typing import NewTypedDict, Members, TypedDict, Iter, GetName, GetType
+from typing import NewTypedDict, Members, TypedDict, GetName, GetType
 
 class Person(TypedDict):
     name: str
     age: int
 
 # Dict comprehension produces Members, fed into NewTypedDict
-TD = NewTypedDict[{GetName[m]: GetType[m] for m in Iter[Members[Person]]}]
+TD = NewTypedDict[{GetName[m]: GetType[m] for m in Members[Person]}]
 x: TD
 reveal_type(x)  # N: Revealed type is "TypedDict({'name': builtins.str, 'age': builtins.int})"
 x = {'name': 'Alice', 'age': 30}
@@ -93,7 +93,7 @@ x = {'name': 'Alice', 'age': 30}
 
 [case testDictComprehensionNewTypedDictWithCondition]
 # Test dict comprehension with filtering condition
-from typing import NewTypedDict, Members, TypedDict, Iter, IsAssignable, GetName, GetType
+from typing import NewTypedDict, Members, TypedDict, IsAssignable, GetName, GetType
 
 class Person(TypedDict):
     name: str
@@ -101,7 +101,7 @@ class Person(TypedDict):
     active: bool
 
 # Filter to only string fields using dict comprehension
-TD = NewTypedDict[{GetName[m]: GetType[m] for m in Iter[Members[Person]] if IsAssignable[GetType[m], str]}]
+TD = NewTypedDict[{GetName[m]: GetType[m] for m in Members[Person] if IsAssignable[GetType[m], str]}]
 x: TD
 reveal_type(x)  # N: Revealed type is "TypedDict({'name': builtins.str})"
 x = {'name': 'Alice'}
@@ -111,14 +111,14 @@ x = {'name': 'Alice'}
 
 [case testDictComprehensionFromClass]
 # Test dict comprehension with class attributes
-from typing import NewTypedDict, Attrs, Iter, GetName, GetType
+from typing import NewTypedDict, Attrs, GetName, GetType
 
 class Point:
     x: int
     y: int
 
 # Create TypedDict from class attributes using dict comprehension
-TD = NewTypedDict[{GetName[m]: GetType[m] for m in Iter[Attrs[Point]]}]
+TD = NewTypedDict[{GetName[m]: GetType[m] for m in Attrs[Point]}]
 x: TD
 reveal_type(x)  # N: Revealed type is "TypedDict({'x': builtins.int, 'y': builtins.int})"
 x = {'x': 1, 'y': 2}

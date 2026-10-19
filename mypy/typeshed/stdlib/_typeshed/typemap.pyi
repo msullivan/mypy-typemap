@@ -268,25 +268,6 @@ class IsEquivalent(Generic[_T, _S]):
 
     ...
 
-@_type_operator
-class Bool(Generic[_T]):
-    """
-    Check if T contains Literal[True].
-    Returns Literal[True] if T is Literal[True] or a union containing it.
-    Equivalent to: IsAssignable[Literal[True], T] and not IsAssignable[T, Never]
-    """
-
-    ...
-
-@_type_operator
-class Iter(Generic[_T]):
-    """
-    Marks a type for iteration in type comprehensions.
-    `for x in Iter[T]` iterates over elements of tuple type T.
-    """
-
-    ...
-
 # --- String Operations ---
 
 @_type_operator

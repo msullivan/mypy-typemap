@@ -269,14 +269,14 @@ x = {'name': 'Alice'}  # nickname is optional
 [typing fixtures/typing-full.pyi]
 
 [case testNewTypedDictWithComprehensionRoundTrip]
-from typing import NewTypedDict, Members, TypedDict, Iter
+from typing import NewTypedDict, Members, TypedDict
 
 class Person(TypedDict):
     name: str
     age: int
 
 # Round-trip: Members extracts, NewTypedDict reconstructs
-TD = NewTypedDict[*[m for m in Iter[Members[Person]]]]
+TD = NewTypedDict[*[m for m in Members[Person]]]
 x: TD
 reveal_type(x)  # N: Revealed type is "TypedDict({'name': builtins.str, 'age': builtins.int})"
 x = {'name': 'Alice', 'age': 30}
@@ -285,7 +285,7 @@ x = {'name': 'Alice', 'age': 30}
 [typing fixtures/typing-full.pyi]
 
 [case testNewTypedDictWithComprehensionFilter]
-from typing import NewTypedDict, Members, TypedDict, Iter, IsAssignable, GetMemberType, Literal
+from typing import NewTypedDict, Members, TypedDict, IsAssignable, GetMemberType, Literal
 
 class Person(TypedDict):
     name: str
@@ -293,7 +293,7 @@ class Person(TypedDict):
     active: bool
 
 # Filter to only string fields
-TD = NewTypedDict[*[m for m in Iter[Members[Person]] if IsAssignable[GetMemberType[m, Literal['typ']], str]]]
+TD = NewTypedDict[*[m for m in Members[Person] if IsAssignable[GetMemberType[m, Literal['typ']], str]]]
 x: TD
 reveal_type(x)  # N: Revealed type is "TypedDict({'name': builtins.str})"
 x = {'name': 'Alice'}
@@ -302,14 +302,14 @@ x = {'name': 'Alice'}
 [typing fixtures/typing-full.pyi]
 
 [case testNewTypedDictWithComprehensionFromClass]
-from typing import NewTypedDict, Attrs, Iter
+from typing import NewTypedDict, Attrs
 
 class Point:
     x: int
     y: int
 
 # Create TypedDict from class attributes
-TD = NewTypedDict[*[m for m in Iter[Attrs[Point]]]]
+TD = NewTypedDict[*[m for m in Attrs[Point]]]
 x: TD
 reveal_type(x)  # N: Revealed type is "TypedDict({'x': builtins.int, 'y': builtins.int})"
 x = {'x': 1, 'y': 2}
@@ -320,7 +320,7 @@ x = {'x': 1, 'y': 2}
 [case testTypeOperatorMembersInit]
 # flags: --python-version 3.12
 # Test Members Init field captures literal values from Final variables
-from typing import Members, Final, GetInit, Iter
+from typing import Members, Final, GetInit
 
 class Config:
     NAME: Final[str] = "app"
@@ -333,7 +333,7 @@ m: Members[Config]
 reveal_type(m)  # N: Revealed type is "tuple[typing.Member[Literal['NAME'], builtins.str, Literal['Final'], Literal['app'], __main__.Config], typing.Member[Literal['VERSION'], builtins.int, Literal['Final'], Literal[42], __main__.Config], typing.Member[Literal['ENABLED'], builtins.bool, Literal['Final'], Literal[True], __main__.Config], typing.Member[Literal['RATIO'], builtins.float, Literal['Final'], builtins.float, __main__.Config], typing.Member[Literal['plain'], builtins.str, Never, Never, __main__.Config]]"
 
 # Test GetInit accessor
-type InitValues = tuple[*[GetInit[m] for m in Iter[Members[Config]]]]
+type InitValues = tuple[*[GetInit[m] for m in Members[Config]]]
 x: InitValues
 reveal_type(x)  # N: Revealed type is "tuple[Literal['app'], Literal[42], Literal[True], builtins.float, Never]"
 
@@ -343,7 +343,7 @@ reveal_type(x)  # N: Revealed type is "tuple[Literal['app'], Literal[42], Litera
 [case testTypeOperatorMembersInitNonFinal]
 # flags: --python-version 3.12
 # Test Members Init field for non-Final variables with initializers
-from typing import Members, Attrs, GetInit, Iter
+from typing import Members, Attrs, GetInit
 
 class Data:
     name: str = "default"
@@ -360,7 +360,7 @@ a: Attrs[Data]
 reveal_type(a)  # N: Revealed type is "tuple[typing.Member[Literal['name'], builtins.str, Never, Literal['default'], __main__.Data], typing.Member[Literal['email'], builtins.str, Never, Literal['lol@lol.com'], __main__.Data], typing.Member[Literal['count'], builtins.int, Never, Literal[42], __main__.Data], typing.Member[Literal['active'], builtins.bool, Never, Literal[True], __main__.Data], typing.Member[Literal['no_init'], builtins.str, Never, Never, __main__.Data]]"
 
 # Test GetInit accessor for non-Final variables
-type InitValues = tuple[*[GetInit[m] for m in Iter[Attrs[Data]]]]
+type InitValues = tuple[*[GetInit[m] for m in Attrs[Data]]]
 x: InitValues
 reveal_type(x)  # N: Revealed type is "tuple[Literal['default'], Literal['lol@lol.com'], Literal[42], Literal[True], Never]"
 
@@ -370,7 +370,7 @@ reveal_type(x)  # N: Revealed type is "tuple[Literal['default'], Literal['lol@lo
 [case testDotNotationMemberAccess]
 # flags: --python-version 3.12
 # Test dot notation for Member component access
-from typing import Members, TypedDict, Iter, Member, Literal, Never
+from typing import Members, TypedDict, Member, Literal, Never
 
 class Person(TypedDict):
     name: str
@@ -380,11 +380,11 @@ m: Members[Person]
 reveal_type(m)  # N: Revealed type is "tuple[typing.Member[Literal['name'], builtins.str, Never, Never, Never], typing.Member[Literal['age'], builtins.int, Never, Never, Never]]"
 
 # Use dot notation to access Member fields
-type Names = tuple[*[T.name for T in Iter[Members[Person]]]]
+type Names = tuple[*[T.name for T in Members[Person]]]
 x: Names
 reveal_type(x)  # N: Revealed type is "tuple[Literal['name'], Literal['age']]"
 
-type Types = tuple[*[T.typ for T in Iter[Members[Person]]]]
+type Types = tuple[*[T.typ for T in Members[Person]]]
 y: Types
 reveal_type(y)  # N: Revealed type is "tuple[builtins.str, builtins.int]"
 
@@ -394,14 +394,14 @@ reveal_type(y)  # N: Revealed type is "tuple[builtins.str, builtins.int]"
 [case testDotNotationNewTypedDict]
 # flags: --python-version 3.12
 # Test dot notation in dict comprehension with NewTypedDict
-from typing import NewTypedDict, Members, TypedDict, Iter
+from typing import NewTypedDict, Members, TypedDict
 
 class Person(TypedDict):
     name: str
     age: int
 
 # Use dot notation in dict comprehension
-type TD = NewTypedDict[{m.name: m.typ for m in Iter[Members[Person]]}]
+type TD = NewTypedDict[{m.name: m.typ for m in Members[Person]}]
 x: TD
 reveal_type(x)  # N: Revealed type is "TypedDict({'name': builtins.str, 'age': builtins.int})"
 x = {'name': 'Alice', 'age': 30}
@@ -412,7 +412,7 @@ x = {'name': 'Alice', 'age': 30}
 [case testDotNotationWithCondition]
 # flags: --python-version 3.12
 # Test dot notation with comprehension condition
-from typing import NewTypedDict, Members, TypedDict, Iter, IsAssignable
+from typing import NewTypedDict, Members, TypedDict, IsAssignable
 
 class Person(TypedDict):
     name: str
@@ -420,7 +420,7 @@ class Person(TypedDict):
     active: bool
 
 # Filter to only string fields using dot notation
-type TD = NewTypedDict[{m.name: m.typ for m in Iter[Members[Person]] if IsAssignable[m.typ, str]}]
+type TD = NewTypedDict[{m.name: m.typ for m in Members[Person] if IsAssignable[m.typ, str]}]
 x: TD
 reveal_type(x)  # N: Revealed type is "TypedDict({'name': builtins.str})"
 x = {'name': 'Alice'}
@@ -470,7 +470,7 @@ reveal_type(a)  # N: Revealed type is "Literal['y']"
 
 [case testAttrsOnEnum]
 # flags: --python-version 3.12
-from typing import Attrs, Iter, Union, IsAssignable, Never
+from typing import Attrs, Union, IsAssignable, Never
 from enum import Enum
 
 class Color(Enum):
@@ -482,11 +482,11 @@ a: Attrs[Color]
 reveal_type(a)  # N: Revealed type is "tuple[typing.Member[Literal['RED'], Literal[1]?, Literal['Final'], Literal[1], __main__.Color], typing.Member[Literal['GREEN'], Literal[2]?, Literal['Final'], Literal[2], __main__.Color], typing.Member[Literal['BLUE'], Literal[3]?, Literal['Final'], Literal[3], __main__.Color]]"
 
 type EnumNames[T] = Union[*[
-    m.name for m in Iter[Attrs[T]]
+    m.name for m in Attrs[T]
     if not IsAssignable[m.init, Never]
 ]]
 type EnumTypes[T] = Union[*[
-    m.init for m in Iter[Attrs[T]]
+    m.init for m in Attrs[T]
     if not IsAssignable[m.init, Never]
 ]]
 

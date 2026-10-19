@@ -15,9 +15,9 @@ For the original mypy README, see [REAL_README.md](REAL_README.md).
 
 ## What's implemented
 
-- **Type operators**: `IsAssignable`, `IsEquivalent`, `Bool`, `GetArg`, `GetArgs`, `GetMember`, `GetMemberType`, `Members`, `Attrs`, `FromUnion`, `Length`, `Slice`, `Concat`, `Uppercase`, `Lowercase`, `Capitalize`, `Uncapitalize`, `RaiseError`
+- **Type operators**: `IsAssignable`, `IsEquivalent`, `GetArg`, `GetArgs`, `GetMember`, `GetMemberType`, `Members`, `Attrs`, `FromUnion`, `Length`, `Slice`, `Concat`, `Uppercase`, `Lowercase`, `Capitalize`, `Uncapitalize`, `RaiseError`
 - **Conditional types**: `true_type if BoolType else false_type`
-- **Type-level comprehensions**: `*[T for x in Iter[...]]` with filtering
+- **Type-level comprehensions**: `*[T for x in ...]` with filtering
 - **Dot notation**: `member.name`, `member.type`, `param.type`, etc.
 - **Boolean operators**: `and`, `or`, `not` on type booleans
 - **Data types**: `Member[name, type, quals, init, definer]`, `Param[name, type, quals]`

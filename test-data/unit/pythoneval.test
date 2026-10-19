@@ -2271,7 +2271,7 @@ type GetFieldItem[T, K] = typing.GetMemberType[
 # Strip `| None` from a type by iterating over its union components
 # and filtering
 type NotOptional[T] = Union[
-    *[x for x in typing.Iter[typing.FromUnion[T]] if not typing.IsAssignable[x, None]]
+    *[x for x in typing.FromUnion[T] if not typing.IsAssignable[x, None]]
 ]
 
 # Adjust an attribute type for use in Public below by dropping | None for
@@ -2292,7 +2292,7 @@ type Public[T] = typing.NewProtocol[
             FixPublicType[typing.GetType[p], typing.GetInit[p]],
             typing.GetQuals[p],
         ]
-        for p in typing.Iter[typing.Attrs[T]]
+        for p in typing.Attrs[T]
         if not typing.IsAssignable[
             Literal[True], GetFieldItem[typing.GetInit[p], Literal["hidden"]]
         ]
@@ -2323,7 +2323,7 @@ type Create[T] = typing.NewProtocol[
             typing.GetQuals[p],
             GetDefault[typing.GetInit[p]],
         ]
-        for p in typing.Iter[typing.Attrs[T]]
+        for p in typing.Attrs[T]
         if not typing.IsAssignable[
             Literal[True],
             GetFieldItem[typing.GetInit[p], Literal["primary_key"]],
@@ -2341,7 +2341,7 @@ type Update[T] = typing.NewProtocol[
             typing.GetQuals[p],
             Literal[None],
         ]
-        for p in typing.Iter[typing.Attrs[T]]
+        for p in typing.Attrs[T]
         if not typing.IsAssignable[
             Literal[True],
             GetFieldItem[typing.GetInit[p], Literal["primary_key"]],
@@ -2371,19 +2371,19 @@ reveal_type(creat)
 upd: HeroUpdate
 reveal_type(upd)
 
-creat_members: tuple[*[typing.GetInit[p] for p in typing.Iter[typing.Members[HeroCreate]]]]
+creat_members: tuple[*[typing.GetInit[p] for p in typing.Members[HeroCreate]]]
 reveal_type(creat_members)
 
-upd_types: tuple[*[typing.GetType[p] for p in typing.Iter[typing.Members[HeroUpdate]]]]
+upd_types: tuple[*[typing.GetType[p] for p in typing.Members[HeroUpdate]]]
 reveal_type(upd_types)
 
-upd_types_dot: tuple[*[p.type for p in typing.Iter[typing.Members[HeroUpdate]]]]
+upd_types_dot: tuple[*[p.type for p in typing.Members[HeroUpdate]]]
 reveal_type(upd_types)
 
 # Test dict comprehension syntax for NewTypedDict
 type HeroDict[T] = typing.NewTypedDict[{
     typing.GetName[p]: typing.GetType[p]
-    for p in typing.Iter[typing.Attrs[T]]
+    for p in typing.Attrs[T]
     if not typing.IsAssignable[
         Literal[True], GetFieldItem[typing.GetInit[p], Literal["hidden"]]
     ]

@@ -6,7 +6,6 @@ from typing import Literal, Unpack, TypedDict
 from typing import (
     NewProtocol,
     BaseTypedDict,
-    Iter,
     Attrs,
     IsAssignable,
     GetType,
@@ -72,7 +71,7 @@ def select[ModelT, K: BaseTypedDict](
                 GetName[c],
                 ConvertField[GetMemberType[ModelT, GetName[c]]],
             ]
-            for c in Iter[Attrs[K]]
+            for c in Attrs[K]
         ]
     ]
 ]:
@@ -120,7 +119,7 @@ contains all the ``Property`` attributes of ``T``.
 type PropsOnly[T] = NewProtocol[
     *[
         Member[GetName[p], PointerArg[GetType[p]]]
-        for p in Iter[Attrs[T]]
+        for p in Attrs[T]
         if IsAssignable[GetType[p], Property]
     ]
 ]
@@ -180,7 +179,6 @@ from typing import Literal, Unpack, TypedDict
 from typing import (
     NewProtocol,
     BaseTypedDict,
-    Iter,
     Attrs,
     IsAssignable,
     GetType,
@@ -227,7 +225,7 @@ type AdjustLink[Tgt, LinkTy] = list[Tgt] if IsAssignable[LinkTy, MultiLink] else
 type PropsOnly[T] = NewProtocol[
     *[
         Member[GetName[p], PointerArg[GetType[p]]]
-        for p in Iter[Attrs[T]]
+        for p in Attrs[T]
         if IsAssignable[GetType[p], Property]
     ]
 ]
@@ -248,7 +246,7 @@ type ConvertField[T, Sel] = (
 
 type ProjectFields[ModelT, K] = NewProtocol[*[
     Member[GetName[c], ConvertField[GetMemberType[ModelT, GetName[c]], GetType[c]]]
-    for c in Iter[Attrs[K]]
+    for c in Attrs[K]
 ]]
 
 
@@ -315,9 +313,7 @@ from typing import (
     Literal,
     Never,
     GetArg,
-    Bool,
     IsEquivalent,
-    Iter,
     Slice,
     Length,
     IsAssignable,
@@ -376,7 +372,7 @@ type Empty[T] = IsAssignable[Length[T], Literal[0]]
 type Tup[*Ts] = tuple[*Ts]
 
 type Merge[T, S] = (
-    S if Bool[Empty[T]] else T if Bool[Empty[S]]
+    S if Empty[T] else T if Empty[S]
     else
     Tup[
         # XXX: This error message position is super wrong!
@@ -466,9 +462,7 @@ from typing import (
     Literal,
     Never,
     GetArg,
-    Bool,
     IsEquivalent,
-    Iter,
     Slice,
     Length,
     IsAssignable,
@@ -499,7 +493,7 @@ type Last[T] = GetArg[T, tuple, Literal[-1]]
 type Empty[T] = IsAssignable[Length[T], Literal[0]]
 
 type Merge[T, S] = (
-    S if Bool[Empty[T]] else T if Bool[Empty[S]]
+    S if Empty[T] else T if Empty[S]
     else
     tuple[
         *Merge[DropLast[T], DropLast[S]],
@@ -577,7 +571,7 @@ type GetFieldItem[T, K] = typing.GetMemberType[
 # Strip `| None` from a type by iterating over its union components
 # and filtering
 type NotOptional[T] = Union[
-    *[x for x in typing.Iter[typing.FromUnion[T]] if not typing.IsAssignable[x, None]]
+    *[x for x in typing.FromUnion[T] if not typing.IsAssignable[x, None]]
 ]
 
 # Adjust an attribute type for use in Public below by dropping | None for
@@ -598,7 +592,7 @@ type Public[T] = typing.NewProtocol[
             FixPublicType[typing.GetType[p], typing.GetInit[p]],
             typing.GetQuals[p],
         ]
-        for p in typing.Iter[typing.Attrs[T]]
+        for p in typing.Attrs[T]
         if not typing.IsAssignable[
             Literal[True], GetFieldItem[typing.GetInit[p], Literal["hidden"]]
         ]
@@ -629,7 +623,7 @@ type Create[T] = typing.NewProtocol[
             typing.GetQuals[p],
             GetDefault[typing.GetInit[p]],
         ]
-        for p in typing.Iter[typing.Attrs[T]]
+        for p in typing.Attrs[T]
         if not typing.IsAssignable[
             Literal[True],
             GetFieldItem[typing.GetInit[p], Literal["primary_key"]],
@@ -647,7 +641,7 @@ type Update[T] = typing.NewProtocol[
             typing.GetQuals[p],
             Literal[None],
         ]
-        for p in typing.Iter[typing.Attrs[T]]
+        for p in typing.Attrs[T]
         if not typing.IsAssignable[
             Literal[True],
             GetFieldItem[typing.GetInit[p], Literal["primary_key"]],
@@ -677,10 +671,10 @@ reveal_type(creat)  # N: Revealed type is "NewProtocol[name: builtins.str, age: 
 upd: HeroUpdate
 reveal_type(upd)  # N: Revealed type is "NewProtocol[name: builtins.str | None = None, age: builtins.int | None | None = None, secret_name: builtins.str | None = None]"
 
-creat_members: tuple[*[typing.GetInit[p] for p in typing.Iter[typing.Members[HeroCreate]]]]
+creat_members: tuple[*[typing.GetInit[p] for p in typing.Members[HeroCreate]]]
 reveal_type(creat_members)  # N: Revealed type is "tuple[Never, None, Never]"
 
-upd_types: tuple[*[typing.GetType[p] for p in typing.Iter[typing.Members[HeroUpdate]]]]
+upd_types: tuple[*[typing.GetType[p] for p in typing.Members[HeroUpdate]]]
 reveal_type(upd_types)  # N: Revealed type is "tuple[builtins.str | None, builtins.int | None | None, builtins.str | None]"
 
 
@@ -738,7 +732,7 @@ type InitFnType[T] = typing.Member[
                     Literal["keyword"],
                     GetDefault[p.init],
                 ]
-                for p in typing.Iter[typing.Attrs[T]]
+                for p in typing.Attrs[T]
             ],
         ],
         None,

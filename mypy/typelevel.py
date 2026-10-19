@@ -394,12 +394,27 @@ def _call_by_value(evaluator: TypeLevelEvaluator, typ: Type) -> Type:
     return evaluator.eval_proper(typ)
 
 
+def eval_condition(evaluator: TypeLevelEvaluator, typ: Type) -> bool | None:
+    """Evaluate a type used as a condition.
+
+    A condition is true if it is equivalent to Literal[True] and false
+    otherwise. Returns None if the condition is undecidable.
+    """
+    cond = evaluator.eval_proper(typ)
+    if isinstance(cond, LiteralType) and isinstance(cond.value, bool):
+        return cond.value
+    if isinstance(cond, AnyType) or has_type_vars(cond):
+        return None
+    true = evaluator.literal_bool(True)
+    return is_subtype(true, cond) and is_subtype(cond, true)
+
+
 @register_operator("_Cond")
 def _eval_cond(
     condition: Type, true_type: Type, false_type: Type, *, evaluator: TypeLevelEvaluator
 ) -> Type:
     """Evaluate _Cond[condition, TrueType, FalseType]."""
-    result = extract_literal_bool(evaluator.eval_proper(condition))
+    result = eval_condition(evaluator, condition)
 
     if result is True:
         return _call_by_value(evaluator, true_type)
@@ -414,16 +429,16 @@ def _eval_cond(
 @register_operator("_And")
 def _eval_and(left_arg: Type, right_arg: Type, *, evaluator: TypeLevelEvaluator) -> Type:
     """Evaluate _And[cond1, cond2] - logical AND of type booleans."""
-    left = extract_literal_bool(evaluator.eval_proper(left_arg))
+    left = eval_condition(evaluator, left_arg)
     if left is False:
         # Short-circuit: False and X = False
         return evaluator.literal_bool(False)
     if left is None:
-        return UninhabitedType()
+        return EXPANSION_ANY
 
-    right = extract_literal_bool(evaluator.eval_proper(right_arg))
+    right = eval_condition(evaluator, right_arg)
     if right is None:
-        return UninhabitedType()
+        return EXPANSION_ANY
 
     return evaluator.literal_bool(right)
 
@@ -431,16 +446,16 @@ def _eval_and(left_arg: Type, right_arg: Type, *, evaluator: TypeLevelEvaluator)
 @register_operator("_Or")
 def _eval_or(left_arg: Type, right_arg: Type, *, evaluator: TypeLevelEvaluator) -> Type:
     """Evaluate _Or[cond1, cond2] - logical OR of type booleans."""
-    left = extract_literal_bool(evaluator.eval_proper(left_arg))
+    left = eval_condition(evaluator, left_arg)
     if left is True:
         # Short-circuit: True or X = True
         return evaluator.literal_bool(True)
     if left is None:
-        return UninhabitedType()
+        return EXPANSION_ANY
 
-    right = extract_literal_bool(evaluator.eval_proper(right_arg))
+    right = eval_condition(evaluator, right_arg)
     if right is None:
-        return UninhabitedType()
+        return EXPANSION_ANY
 
     return evaluator.literal_bool(right)
 
@@ -448,9 +463,9 @@ def _eval_or(left_arg: Type, right_arg: Type, *, evaluator: TypeLevelEvaluator) 
 @register_operator("_Not")
 def _eval_not(arg: Type, *, evaluator: TypeLevelEvaluator) -> Type:
     """Evaluate _Not[cond] - logical NOT of a type boolean."""
-    result = extract_literal_bool(evaluator.eval_proper(arg))
+    result = eval_condition(evaluator, arg)
     if result is None:
-        return UninhabitedType()
+        return EXPANSION_ANY
 
     return evaluator.literal_bool(not result)
 
@@ -465,16 +480,6 @@ def _eval_dict_entry(name_type: Type, value_type: Type, *, evaluator: TypeLevelE
     member_info = evaluator.get_typemap_type("Member")
     never = UninhabitedType()
     return Instance(member_info.type, [name_type, value_type, never, never, never])
-
-
-@register_operator("Iter")
-def _eval_iter(arg: Type, *, evaluator: TypeLevelEvaluator) -> Type:
-    """Evaluate a type-level iterator (Iter[T])."""
-    target = evaluator.eval_proper(arg)
-    if isinstance(target, TupleType):
-        return target
-    else:
-        return UninhabitedType()
 
 
 @register_operator("IsAssignable")
@@ -510,32 +515,6 @@ def _eval_isequiv(lhs: Type, rhs: Type, *, evaluator: TypeLevelEvaluator) -> Typ
     result = is_subtype(left_proper, right_proper) and is_subtype(right_proper, left_proper)
 
     return evaluator.literal_bool(result)
-
-
-@register_operator("Bool")
-def _eval_bool(arg: Type, *, evaluator: TypeLevelEvaluator) -> Type:
-    """Evaluate Bool[T] - check if T contains Literal[True].
-
-    Returns Literal[True] if T is Literal[True] or a union containing Literal[True].
-    Equivalent to: IsAssignable[Literal[True], T] and not IsAssignable[T, Never]
-    """
-    arg_proper = evaluator.eval_proper(arg)
-
-    # Check if Literal[True] is a subtype of arg (i.e., arg contains True)
-    # and arg is not Never
-    literal_true = evaluator.literal_bool(True)
-    contains_true = is_subtype(literal_true, arg_proper)
-    is_never = isinstance(arg_proper, UninhabitedType)
-
-    return evaluator.literal_bool(contains_true and not is_never)
-
-
-def extract_literal_bool(typ: Type) -> bool | None:
-    """Extract bool value from LiteralType."""
-    typ = get_proper_type(typ)
-    if isinstance(typ, LiteralType) and isinstance(typ.value, bool):
-        return typ.value
-    return None
 
 
 def extract_literal_int(typ: Type) -> int | None:
@@ -1451,7 +1430,7 @@ def _eval_raise_error(*args: Type, evaluator: TypeLevelEvaluator) -> Type:
 def evaluate_comprehension(evaluator: TypeLevelEvaluator, typ: TypeForComprehension) -> Type:
     """Evaluate a TypeForComprehension.
 
-    Evaluates *[Expr for var in Iter if Cond] to UnpackType(TupleType([...])).
+    Evaluates *[Expr for var in T if Cond] to UnpackType(TupleType([...])).
     """
 
     # Get the iterable type and expand it to a TupleType
@@ -1473,7 +1452,7 @@ def evaluate_comprehension(evaluator: TypeLevelEvaluator, typ: TypeForComprehens
         # Evaluate all conditions
         all_pass = True
         for cond in substituted_conditions:
-            cond_result = extract_literal_bool(evaluator.evaluate(cond))
+            cond_result = eval_condition(evaluator, cond)
             if cond_result is False:
                 all_pass = False
                 break

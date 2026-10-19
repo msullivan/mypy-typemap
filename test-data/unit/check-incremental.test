@@ -246,7 +246,6 @@ import a
 from typing import (
     TypeVar,
     NewTypedDict,
-    Iter,
     Attrs,
     GetName,
     GetType,
@@ -258,7 +257,7 @@ PropsOnly = list[
     NewTypedDict[
         *[
             Member[GetName[p], GetType[p]]
-            for p in Iter[Attrs[T]]
+            for p in Attrs[T]
         ]
     ]
 ]
@@ -266,7 +265,6 @@ PropsOnly = list[
 from typing import (
     TypeVar,
     NewTypedDict,
-    Iter,
     Attrs,
     GetName,
     GetType,
@@ -278,7 +276,7 @@ PropsOnly = list[
     NewTypedDict[
         *[
             Member[GetName[p], GetType[p]]
-            for p in Iter[Attrs[T]]
+            for p in Attrs[T]
         ]
     ]
 ]
@@ -294,7 +292,7 @@ import b
 
 [file a.py]
 
-from typing import TypeVar, NewProtocol, Member, Literal, Iter
+from typing import TypeVar, NewProtocol, Member, Literal
 
 # Basic NewProtocol creation
 MyProto = NewProtocol[
@@ -311,7 +309,7 @@ LinkedList = NewProtocol[
 
 z: LinkedList[str]
 
-lol: tuple[*[t for t in Iter[tuple[MyProto]]]]
+lol: tuple[*[t for t in tuple[MyProto]]]
 
 asdf: NewProtocol[
     Member[Literal["x"], int],

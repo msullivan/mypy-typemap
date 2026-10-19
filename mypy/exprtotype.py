@@ -295,7 +295,7 @@ def expr_to_unanalyzed_type(
     elif isinstance(expr, EllipsisExpr):
         return EllipsisType(expr.line)
     elif allow_unpack and isinstance(expr, StarExpr):
-        # Check if this is a type comprehension: *[Expr for var in Iter if Cond]
+        # Check if this is a type comprehension: *[Expr for var in T if Cond]
         if isinstance(expr.expr, ListComprehension):
             gen = expr.expr.generator
             # Only support single generator

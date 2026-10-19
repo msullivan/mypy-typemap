@@ -23,7 +23,7 @@ import b
 
 [file a.py]
 
-from typing import NewProtocol, Member, Literal, Iter
+from typing import NewProtocol, Member, Literal
 
 # Basic NewProtocol creation
 type MyProto = NewProtocol[
@@ -39,7 +39,7 @@ type LinkedList[T] = NewProtocol[
 
 z: LinkedList[str]
 
-lol: tuple[*[t for t in Iter[tuple[MyProto]]]]
+lol: tuple[*[t for t in tuple[MyProto]]]
 
 asdf: NewProtocol[
     Member[Literal["x"], int],

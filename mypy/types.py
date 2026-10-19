@@ -488,7 +488,7 @@ class ComputedType(ProperType):
 
     Subclasses:
     - TypeOperatorType: e.g., GetArg[T, Base, 0], Members[T], _Cond[IsAssignable[T, Base], X, Y]
-    - TypeForComprehension: e.g., *[Expr for x in Iter[T] if Cond]
+    - TypeForComprehension: e.g., *[Expr for x in T if Cond]
     """
 
     __slots__ = ()
@@ -596,7 +596,7 @@ class TypeOperatorType(ComputedType):
 
 
 class TypeForComprehension(ComputedType):
-    """Represents *[Expr for var in Iter[T] if Cond].
+    """Represents *[Expr for var in T if Cond].
 
     Expands to a tuple of types.
     """

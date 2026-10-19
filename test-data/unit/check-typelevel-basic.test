@@ -30,29 +30,46 @@ reveal_type(x4)  # N: Revealed type is "Literal[False]"
 [builtins fixtures/typelevel.pyi]
 [typing fixtures/typing-full.pyi]
 
-[case testTypeOperatorBool]
+[case testTypeOperatorConditionTruthiness]
 # flags: --python-version 3.10
-from typing import Bool, Literal, IsAssignable, Union
+from typing import Literal, IsAssignable, Union
 
-# Bool checks if type contains Literal[True]
-x1: Bool[Literal[True]]
-reveal_type(x1)  # N: Revealed type is "Literal[True]"
+# A condition is true only if it is equivalent to Literal[True]
+x1: int if Literal[True] else str
+reveal_type(x1)  # N: Revealed type is "builtins.int"
 
-x2: Bool[Literal[False]]
-reveal_type(x2)  # N: Revealed type is "Literal[False]"
+x2: int if Literal[False] else str
+reveal_type(x2)  # N: Revealed type is "builtins.str"
 
-x3: Bool[Union[Literal[True], Literal[False]]]
-reveal_type(x3)  # N: Revealed type is "Literal[True]"
+x3: int if Union[Literal[True], Literal[False]] else str
+reveal_type(x3)  # N: Revealed type is "builtins.str"
 
-x4: Bool[bool]
-reveal_type(x4)  # N: Revealed type is "Literal[True]"
+x4: int if bool else str
+reveal_type(x4)  # N: Revealed type is "builtins.str"
 
-# Using Bool to check result of IsAssignable
-x5: Bool[IsAssignable[int, object]]
-reveal_type(x5)  # N: Revealed type is "Literal[True]"
+x5: int if IsAssignable[int, object] else str
+reveal_type(x5)  # N: Revealed type is "builtins.int"
 
-x6: Bool[IsAssignable[int, str]]
-reveal_type(x6)  # N: Revealed type is "Literal[False]"
+x6: int if IsAssignable[int, str] else str
+reveal_type(x6)  # N: Revealed type is "builtins.str"
+
+x7: int if None else str
+reveal_type(x7)  # N: Revealed type is "builtins.str"
+
+x8: bool or Literal[True]
+reveal_type(x8)  # N: Revealed type is "Literal[True]"
+
+x9: not bool
+reveal_type(x9)  # N: Revealed type is "Literal[True]"
+
+x10: Literal[True] and Union[Literal[True], Literal[False]]
+reveal_type(x10)  # N: Revealed type is "Literal[False]"
+
+x11: int if Union[Literal[True], Literal[True]] else str
+reveal_type(x11)  # N: Revealed type is "builtins.int"
+
+x12: int if object else str
+reveal_type(x12)  # N: Revealed type is "builtins.str"
 
 [builtins fixtures/typelevel.pyi]
 [typing fixtures/typing-full.pyi]
@@ -362,12 +379,12 @@ reveal_type(z)  # N: Revealed type is "builtins.int | builtins.str | builtins.by
 [case testTypeOperatorToUnion]
 # flags: --python-version 3.10
 # Test FromUnion operator
-from typing import Union, Iter, Bool, Literal
+from typing import Union, Literal
 
-a: Union[*[x for x in Iter[tuple[int, str]]]]
+a: Union[*[x for x in tuple[int, str]]]
 reveal_type(a)  # N: Revealed type is "builtins.int | builtins.str"
 
-b: Union[*[x for x in Iter[tuple[int, str]] if Bool[Literal[False]]]]
+b: Union[*[x for x in tuple[int, str] if Literal[False]]]
 reveal_type(b)  # N: Revealed type is "Never"
 
 c: Union[*tuple[int, str]]
@@ -382,7 +399,7 @@ reveal_type(d)  # N: Revealed type is "Never"
 [case testTypeOperatorNewUnionWithComprehension]
 # flags: --python-version 3.10
 # Test _NewUnion with comprehension
-from typing import _NewUnion, Iter, Attrs, GetType
+from typing import _NewUnion, Attrs, GetType
 
 class Foo:
     a: int
@@ -390,7 +407,7 @@ class Foo:
     c: bytes
 
 # Build union of all attribute types
-AttrTypes = _NewUnion[*[GetType[m] for m in Iter[Attrs[Foo]]]]
+AttrTypes = _NewUnion[*[GetType[m] for m in Attrs[Foo]]]
 x: AttrTypes
 reveal_type(x)  # N: Revealed type is "builtins.int | builtins.str | builtins.bytes"
 
@@ -469,7 +486,7 @@ reveal_type(x4)  # N: Revealed type is "tuple[builtins.str, builtins.float]"
 
 [case testTypeOperatorLength]
 # Test Length operator
-from typing import Length, Literal, Iter, Tuple
+from typing import Length, Literal, Tuple
 
 x: Length[tuple[int, str, float]]
 reveal_type(x)  # N: Revealed type is "Literal[3]"
@@ -483,7 +500,7 @@ reveal_type(z)  # N: Revealed type is "Literal[0]"
 w: Length[tuple[int, ...]]
 reveal_type(w)  # N: Revealed type is "None"
 
-a: Length[tuple[*[x for x in Iter[tuple[int, str, bool]]]]]
+a: Length[tuple[*[x for x in tuple[int, str, bool]]]]
 reveal_type(a)  # N: Revealed type is "Literal[3]"
 
 b: Length[tuple[str, *tuple[int, ...]]]
@@ -688,13 +705,13 @@ reveal_type(z2)  # N: Revealed type is "Any"
 [case testTypeComprehensionBasicTy]
 # flags: --python-version 3.14
 # Test basic type comprehension
-from typing import IsAssignable, Iter
+from typing import IsAssignable
 
 class A[*T]:
     pass
 
 # Basic comprehension - maps over tuple elements
-def f(x: A[*[T for T in Iter[tuple[int, str, float]]]]) -> None:
+def f(x: A[*[T for T in tuple[int, str, float]]]) -> None:
     pass
 
 reveal_type(f)  # N: Revealed type is "def (x: __main__.A[builtins.int, builtins.str, builtins.float])"
@@ -704,15 +721,15 @@ reveal_type(f)  # N: Revealed type is "def (x: __main__.A[builtins.int, builtins
 
 [case testTypeComprehensionBasic]
 # Test basic type comprehension
-from typing import IsAssignable, Iter
+from typing import IsAssignable
 
 # Basic comprehension - maps over tuple elements
-def f(x: tuple[*[T for T in Iter[tuple[int, str, float]]]]) -> None:
+def f(x: tuple[*[T for T in tuple[int, str, float]]]) -> None:
     pass
 
 reveal_type(f)  # N: Revealed type is "def (x: tuple[builtins.int, builtins.str, builtins.float])"
 
-z: tuple[*[T for T in Iter[tuple[()]]]]
+z: tuple[*[T for T in tuple[()]]]
 reveal_type(z)  # N: Revealed type is "tuple[()]"
 
 [builtins fixtures/typelevel.pyi]
@@ -720,10 +737,10 @@ reveal_type(z)  # N: Revealed type is "tuple[()]"
 
 [case testTypeComprehensionWithCondition]
 # Test type comprehension with filtering condition
-from typing import IsAssignable, Iter
+from typing import IsAssignable
 
 # Filter elements - only keep subtypes of int (int, bool)
-def f(x: tuple[*[T for T in Iter[tuple[int, str, bool, float]] if IsAssignable[T, int]]]) -> None:
+def f(x: tuple[*[T for T in tuple[int, str, bool, float] if IsAssignable[T, int]]]) -> None:
     pass
 
 reveal_type(f)  # N: Revealed type is "def (x: tuple[builtins.int, builtins.bool])"
@@ -733,10 +750,10 @@ reveal_type(f)  # N: Revealed type is "def (x: tuple[builtins.int, builtins.bool
 
 [case testTypeComprehensionTransform]
 # Test type comprehension with element transformation
-from typing import Uppercase, Literal, Iter
+from typing import Uppercase, Literal
 
 # Transform elements
-x: tuple[*[Uppercase[T] for T in Iter[tuple[Literal["a"], Literal["b"], Literal["c"]]]]]
+x: tuple[*[Uppercase[T] for T in tuple[Literal["a"], Literal["b"], Literal["c"]]]]
 reveal_type(x)  # N: Revealed type is "tuple[Literal['A'], Literal['B'], Literal['C']]"
 
 [builtins fixtures/typelevel.pyi]
@@ -746,10 +763,10 @@ reveal_type(x)  # N: Revealed type is "tuple[Literal['A'], Literal['B'], Literal
 [case testTypeComprehensionAlias1]
 # flags: --python-version 3.14
 # Test type comprehension with element transformation
-from typing import Uppercase, Literal, Iter
+from typing import Uppercase, Literal
 
 # Transform elements
-type A = tuple[*[Uppercase[T] for T in Iter[tuple[Literal["a"], Literal["b"], Literal["c"]]]]]
+type A = tuple[*[Uppercase[T] for T in tuple[Literal["a"], Literal["b"], Literal["c"]]]]
 x: A
 reveal_type(x)  # N: Revealed type is "tuple[Literal['A'], Literal['B'], Literal['C']]"
 
@@ -759,10 +776,10 @@ reveal_type(x)  # N: Revealed type is "tuple[Literal['A'], Literal['B'], Literal
 [case testTypeComprehensionAlias2]
 # flags: --python-version 3.14
 # Test type comprehension with element transformation
-from typing import Uppercase, Literal, Iter
+from typing import Uppercase, Literal
 
 # Transform elements
-type Trans[U] = tuple[*[Uppercase[T] for T in Iter[U]]]
+type Trans[U] = tuple[*[Uppercase[T] for T in U]]
 x: Trans[tuple[Literal["a"], Literal["b"], Literal["c"]]]
 reveal_type(x)  # N: Revealed type is "tuple[Literal['A'], Literal['B'], Literal['C']]"
 
@@ -772,12 +789,12 @@ reveal_type(x)  # N: Revealed type is "tuple[Literal['A'], Literal['B'], Literal
 [case testTypeComprehensionAlias3]
 # flags: --python-version 3.14
 # Test type comprehension with element transformation
-from typing import Uppercase, Literal, Iter
+from typing import Uppercase, Literal
 
 # XXX: DECISION: Should shadowing be allowed?
 
 # Transform elements
-type Trans[T] = tuple[*[Uppercase[T] for T in Iter[T]]]  # E: "T" already defined as a type parameter
+type Trans[T] = tuple[*[Uppercase[T] for T in T]]  # E: "T" already defined as a type parameter
 x: Trans[tuple[Literal["a"], Literal["b"], Literal["c"]]]
 reveal_type(x)  # N: Revealed type is "tuple[Literal['A'], Literal['B'], Literal['C']]"
 
@@ -867,10 +884,10 @@ class E(A):
 [case testTypeOperatorSubType3]
 # flags: --python-version 3.14
 
-from typing import Callable, IsAssignable, Literal, Iter
+from typing import Callable, IsAssignable, Literal
 
 class A:
-    def process[Ts](self, x: Ts) -> tuple[*[t for t in Iter[Ts]]]:
+    def process[Ts](self, x: Ts) -> tuple[*[t for t in Ts]]:
         ...
 
 
@@ -880,16 +897,16 @@ class B(A):
 
 # alpha varying
 class C(A):
-    def process[Us](self, x: Us) -> tuple[*[s for s in Iter[Us]]]:
+    def process[Us](self, x: Us) -> tuple[*[s for s in Us]]:
         ...
 
 
 class D(A):
-    def process[Ts](self, x: Ts) -> tuple[*[int for s in Iter[Ts]]]:  # E: Signature of "process" incompatible with supertype "A" \
+    def process[Ts](self, x: Ts) -> tuple[*[int for s in Ts]]:  # E: Signature of "process" incompatible with supertype "A" \
                                                                       # N:      Superclass: \
-                                                                      # N:          def [Ts] process(self, x: Ts) -> tuple[*[t for t in typing.Iter[Ts]]] \
+                                                                      # N:          def [Ts] process(self, x: Ts) -> tuple[*[t for t in Ts]] \
                                                                       # N:      Subclass: \
-                                                                      # N:          def [Ts] process(self, x: Ts) -> tuple[*[int for s in typing.Iter[Ts]]]
+                                                                      # N:          def [Ts] process(self, x: Ts) -> tuple[*[int for s in Ts]]
         ...
 
 [builtins fixtures/typelevel.pyi]
@@ -941,10 +958,10 @@ def g[T](
 [case testTypeOperatorTypedDictParam]
 # flags: --python-version 3.14
 
-from typing import BaseTypedDict, Callable, Attrs, GetName, TypedDict, Iter
+from typing import BaseTypedDict, Callable, Attrs, GetName, TypedDict
 
 def foo[T: BaseTypedDict](x: T) -> tuple[
-    *[GetName[m] for m in Iter[Attrs[T]]]
+    *[GetName[m] for m in Attrs[T]]
 ]:
     return tuple(x.keys())  # type: ignore
 
@@ -1468,7 +1485,7 @@ reveal_type(ps4)  # N: Revealed type is "tuple[typing.Param[Literal['self'], __m
 # The bug was that _expand_type_fors_in_args would infinitely expand
 # recursive aliases inside UnpackType when the expansion was stuck
 # on TypeVars.
-from typing import Literal, Bool, IsAssignable, Slice, GetArg, Length, RaiseError, assert_type
+from typing import Literal, IsAssignable, Slice, GetArg, Length, RaiseError, assert_type
 
 type DropLast[T] = Slice[T, Literal[0], Literal[-1]]
 type Last[T] = GetArg[T, tuple, Literal[-1]]
@@ -1476,9 +1493,9 @@ type Empty[T] = IsAssignable[Length[T], Literal[0]]
 
 type Zip[T, S] = (
     tuple[()]
-    if Bool[Empty[T]] and Bool[Empty[S]]
+    if Empty[T] and Empty[S]
     else RaiseError[Literal["Zip length mismatch"], T, S]
-    if Bool[Empty[T]] or Bool[Empty[S]]
+    if Empty[T] or Empty[S]
     else tuple[*Zip[DropLast[T], DropLast[S]], tuple[Last[T], Last[S]]]
 )
 
@@ -1497,7 +1514,7 @@ assert_type(result, tuple[tuple[int, float], tuple[str, bool]])
 # Regression test: same as above but with TypeVarTuples (*Ts, *Us).
 # RaiseError inside the Zip body must not fire during error formatting
 # when get_proper_type evaluates it standalone outside its _Cond context.
-from typing import Literal, Bool, IsAssignable, Slice, GetArg, Length, RaiseError, assert_type
+from typing import Literal, IsAssignable, Slice, GetArg, Length, RaiseError, assert_type
 
 type DropLast[T] = Slice[T, Literal[0], Literal[-1]]
 type Last[T] = GetArg[T, tuple, Literal[-1]]
@@ -1505,9 +1522,9 @@ type Empty[T] = IsAssignable[Length[T], Literal[0]]
 
 type Zip[T, S] = (
     tuple[()]
-    if Bool[Empty[T]] and Bool[Empty[S]]
+    if Empty[T] and Empty[S]
     else RaiseError[Literal["Zip length mismatch"], T, S]
-    if Bool[Empty[T]] or Bool[Empty[S]]
+    if Empty[T] or Empty[S]
     else tuple[*Zip[DropLast[T], DropLast[S]], tuple[Last[T], Last[S]]]
 )
 

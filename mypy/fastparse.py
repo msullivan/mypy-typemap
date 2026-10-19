@@ -2156,7 +2156,7 @@ class TypeConverter:
         return result
 
     def visit_DictComp(self, n: ast3.DictComp) -> Type:
-        """Convert {k: v for x in Iter[T]} to *[_DictEntry[k, v] for x in Iter[T]].
+        """Convert {k: v for x in T} to *[_DictEntry[k, v] for x in T].
 
         Dict comprehensions in type context desugar to unpacked type comprehensions
         where each element is a _DictEntry[key, value].
@@ -2214,7 +2214,7 @@ class TypeConverter:
             return self.invalid_type(n)
 
     # Used for Callable[[X *Ys, Z], R] etc.
-    # Also handles type comprehensions: *[Expr for var in Iter if Cond]
+    # Also handles type comprehensions: *[Expr for var in T if Cond]
     def visit_Starred(self, n: ast3.Starred) -> Type:
         # Check if this is a list comprehension (type comprehension syntax)
         if isinstance(n.value, ast3.ListComp):
@@ -2222,7 +2222,7 @@ class TypeConverter:
         return UnpackType(self.visit(n.value), from_star_syntax=True)
 
     def visit_ListComp_as_type(self, n: ast3.ListComp) -> Type:
-        """Convert *[Expr for var in Iter if Cond] to TypeForComprehension."""
+        """Convert *[Expr for var in T if Cond] to TypeForComprehension."""
         # Currently only support single generator
         if len(n.generators) != 1:
             return self.invalid_type(

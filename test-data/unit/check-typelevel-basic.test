@@ -393,6 +393,15 @@ reveal_type(c)  # N: Revealed type is "builtins.int | builtins.str"
 d: Union[*tuple[()]]
 reveal_type(d)  # N: Revealed type is "Never"
 
+e: Union[*tuple[int, ...]]
+reveal_type(e)  # N: Revealed type is "builtins.int"
+
+f: Union[str, *tuple[int, ...]]
+reveal_type(f)  # N: Revealed type is "builtins.str | builtins.int"
+
+g: Union[*tuple[str, *tuple[int, ...]]]
+reveal_type(g)  # N: Revealed type is "builtins.str | builtins.int"
+
 [builtins fixtures/typelevel.pyi]
 [typing fixtures/typing-full.pyi]
 

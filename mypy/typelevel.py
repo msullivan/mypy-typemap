@@ -738,7 +738,16 @@ def _eval_from_union(arg: Type, *, evaluator: TypeLevelEvaluator) -> Type:
 @register_operator("_NewUnion")
 def _eval_new_union(*args: Type, evaluator: TypeLevelEvaluator) -> Type:
     """Evaluate _NewUnion[*Ts] -> union of all type arguments."""
-    return make_simplified_union(list(args))
+    items: list[Type] = []
+    for arg in args:
+        if isinstance(arg, UnpackType):
+            unpacked = get_proper_type(arg.type)
+            if isinstance(unpacked, Instance) and unpacked.type.fullname == "builtins.tuple":
+                # An unbounded *tuple[X, ...] contributes X
+                items.append(unpacked.args[0])
+                continue
+        items.append(arg)
+    return make_simplified_union(items)
 
 
 @register_operator("_NewCallable")

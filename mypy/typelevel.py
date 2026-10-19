@@ -63,6 +63,7 @@ from mypy.types import (
     UninhabitedType,
     UnionType,
     UnpackType,
+    find_unpacked_any,
     get_proper_type,
     has_type_vars,
     is_stuck_expansion,
@@ -313,6 +314,10 @@ class TypeLevelEvaluator:
             args = typ.args
             if info.expected_argc is None:
                 args = self.flatten_args(args)
+                # If a comprehension over Any landed in the flattened args,
+                # collapse the whole variadic operator call to Any.
+                if (unpacked_any := find_unpacked_any(args)) is not None:
+                    return unpacked_any
             elif len(args) != info.expected_argc:
                 return UninhabitedType()
             try:
@@ -338,6 +343,8 @@ class TypeLevelEvaluator:
         """Flatten type arguments, evaluating and unpacking as needed.
 
         Handles UnpackType from comprehensions by expanding the inner TupleType.
+        An UnpackType(AnyType) (produced by a comprehension over Any) is
+        passed through for the caller to detect via find_unpacked_any.
         """
         flat_args: list[Type] = []
         for arg in args:
@@ -1435,6 +1442,11 @@ def evaluate_comprehension(evaluator: TypeLevelEvaluator, typ: TypeForComprehens
 
     # Get the iterable type and expand it to a TupleType
     iter_proper = evaluator.eval_proper(typ.iter_type)
+
+    if isinstance(iter_proper, AnyType):
+        # Comprehension over Any: propagate Any as an UnpackType(AnyType)
+        # that the enclosing variadic container collapses to Any.
+        return UnpackType(AnyType(TypeOfAny.from_another_any, source_any=iter_proper))
 
     if not isinstance(iter_proper, TupleType):
         # Can only iterate over tuple types

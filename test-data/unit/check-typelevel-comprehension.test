@@ -125,3 +125,59 @@ x = {'x': 1, 'y': 2}
 
 [builtins fixtures/typelevel.pyi]
 [typing fixtures/typing-full.pyi]
+
+[case testTypeComprehensionOverAnyInTuple]
+# A comprehension over Any collapses the enclosing tuple to Any.
+from typing import Any
+
+x: tuple[*[list[T] for T in Any]]
+reveal_type(x)  # N: Revealed type is "Any"
+
+y: tuple[int, *[list[T] for T in Any], str]
+reveal_type(y)  # N: Revealed type is "Any"
+
+[builtins fixtures/typelevel.pyi]
+[typing fixtures/typing-full.pyi]
+
+[case testTypeComprehensionOverAnyInUnion]
+# A comprehension over Any collapses the enclosing Union to Any.
+from typing import Union, Any
+
+x: Union[*[list[T] for T in Any]]
+reveal_type(x)  # N: Revealed type is "Any"
+
+[builtins fixtures/typelevel.pyi]
+[typing fixtures/typing-full.pyi]
+
+[case testTypeComprehensionOverAnyInNewProtocol]
+# A comprehension over Any collapses the enclosing NewProtocol to Any:
+# any value satisfies the resulting protocol without error.
+from typing import NewProtocol, Member, Literal, Any
+
+P = NewProtocol[*[Member[Literal['x'], T] for T in Any]]
+
+def f(p: P) -> None: ...
+
+class Impl: ...
+
+f(Impl())  # P collapsed to Any, so this is fine
+f(42)
+
+[builtins fixtures/typelevel.pyi]
+[typing fixtures/typing-full.pyi]
+
+[case testTypeComprehensionOverAnyInTypeAlias]
+# flags: --python-version 3.12
+# The collapse to Any flows through a PEP 695 alias.
+from typing import Any
+
+type MapList[X] = tuple[*[list[T] for T in X]]
+
+x: MapList[Any]
+reveal_type(x)  # N: Revealed type is "Any"
+
+y: MapList[tuple[int, str]]
+reveal_type(y)  # N: Revealed type is "tuple[builtins.list[builtins.int], builtins.list[builtins.str]]"
+
+[builtins fixtures/typelevel.pyi]
+[typing fixtures/typing-full.pyi]

@@ -3930,6 +3930,21 @@ def _could_be_computed_unpack(t: Type) -> bool:
     )
 
 
+def find_unpacked_any(items: Iterable[Type]) -> AnyType | None:
+    """Return the AnyType payload from the first UnpackType(AnyType) in items.
+
+    This is produced by evaluating a type comprehension whose source is
+    Any; the enclosing variadic container should collapse to Any when it
+    sees one.
+    """
+    for item in items:
+        if isinstance(item, UnpackType):
+            inner = get_proper_type(item.type)
+            if isinstance(inner, AnyType):
+                return inner
+    return None
+
+
 def _expand_type_fors_in_args(typ: ProperType) -> ProperType:
     """
     Expand any TypeForComprehensions in type arguments.
@@ -3948,6 +3963,10 @@ def _expand_type_fors_in_args(typ: ProperType) -> ProperType:
         # expanding the types might produce Unpacks, which we use
         # expand_type to substitute in.
         typ = expand_type(typ2, {})
+        if isinstance(typ, TupleType):
+            # A comprehension over Any landed here; propagate Any through the tuple.
+            if (unpacked_any := find_unpacked_any(typ.items)) is not None:
+                return unpacked_any
     elif (
         isinstance(typ, Instance)
         and typ.type  # Make sure it's not a FakeInfo
@@ -3956,6 +3975,9 @@ def _expand_type_fors_in_args(typ: ProperType) -> ProperType:
     ):
         typ2 = typ.copy_modified(args=[get_proper_type(st) for st in typ.args])
         typ = expand_type(typ2, {})
+        if isinstance(typ, Instance):
+            if (unpacked_any := find_unpacked_any(typ.args)) is not None:
+                return unpacked_any
     elif isinstance(typ, UnpackType) and _could_be_computed_unpack(typ):
         # No need to expand here
         expanded = get_proper_type(typ.type)

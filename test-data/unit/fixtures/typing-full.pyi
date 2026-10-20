@@ -333,7 +333,7 @@ class Member(Generic[_Name, _Type, _Quals, _Init, _Definer]):
     Represents a class member with name, type, qualifiers, initializer, and definer.
     """
     name: _Name
-    typ: _Type
+    type: _Type
     quals: _Quals
     init: _Init
     definer: _Definer
@@ -346,7 +346,7 @@ _M = TypeVar("_M")
 _P = TypeVar("_P")
 
 GetName = GetMemberType[_MP, Literal["name"]]
-GetType = GetMemberType[_MP, Literal["typ"]]
+GetType = GetMemberType[_MP, Literal["type"]]
 GetQuals = GetMemberType[_M, Literal["quals"]]
 GetKind = GetMemberType[_P, Literal["kind"]]
 GetInit = GetMemberType[_M, Literal["init"]]

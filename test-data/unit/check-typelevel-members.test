@@ -293,7 +293,7 @@ class Person(TypedDict):
     active: bool
 
 # Filter to only string fields
-TD = NewTypedDict[*[m for m in Members[Person] if IsAssignable[GetMemberType[m, Literal['typ']], str]]]
+TD = NewTypedDict[*[m for m in Members[Person] if IsAssignable[GetMemberType[m, Literal['type']], str]]]
 x: TD
 reveal_type(x)  # N: Revealed type is "TypedDict({'name': builtins.str})"
 x = {'name': 'Alice'}
@@ -384,7 +384,7 @@ type Names = tuple[*[T.name for T in Members[Person]]]
 x: Names
 reveal_type(x)  # N: Revealed type is "tuple[Literal['name'], Literal['age']]"
 
-type Types = tuple[*[T.typ for T in Members[Person]]]
+type Types = tuple[*[T.type for T in Members[Person]]]
 y: Types
 reveal_type(y)  # N: Revealed type is "tuple[builtins.str, builtins.int]"
 
@@ -401,7 +401,7 @@ class Person(TypedDict):
     age: int
 
 # Use dot notation in dict comprehension
-type TD = NewTypedDict[{m.name: m.typ for m in Members[Person]}]
+type TD = NewTypedDict[{m.name: m.type for m in Members[Person]}]
 x: TD
 reveal_type(x)  # N: Revealed type is "TypedDict({'name': builtins.str, 'age': builtins.int})"
 x = {'name': 'Alice', 'age': 30}
@@ -420,7 +420,7 @@ class Person(TypedDict):
     active: bool
 
 # Filter to only string fields using dot notation
-type TD = NewTypedDict[{m.name: m.typ for m in Members[Person] if IsAssignable[m.typ, str]}]
+type TD = NewTypedDict[{m.name: m.type for m in Members[Person] if IsAssignable[m.type, str]}]
 x: TD
 reveal_type(x)  # N: Revealed type is "TypedDict({'name': builtins.str})"
 x = {'name': 'Alice'}
@@ -437,8 +437,8 @@ class Point:
     x: int
     y: str
 
-# Dot notation on a subscripted type: Member[...].typ
-x: Member[Literal['x'], int, Never, Never, Point].typ
+# Dot notation on a subscripted type: Member[...].type
+x: Member[Literal['x'], int, Never, Never, Point].type
 reveal_type(x)  # N: Revealed type is "builtins.int"
 
 y: Member[Literal['x'], int, Never, Never, Point].name
@@ -456,8 +456,8 @@ class Point:
     x: int
     y: str
 
-# Conditional evaluates to a Member, then .typ extracts the type
-x: (Member[Literal['x'], int, Never, Never, Point] if IsAssignable[int, int] else Member[Literal['y'], str, Never, Never, Point]).typ
+# Conditional evaluates to a Member, then .type extracts the type
+x: (Member[Literal['x'], int, Never, Never, Point] if IsAssignable[int, int] else Member[Literal['y'], str, Never, Never, Point]).type
 reveal_type(x)  # N: Revealed type is "builtins.int"
 
 # Same inside a type alias
@@ -508,7 +508,7 @@ class Point:
     x: int
     y: str
 
-type T = Member[Literal['x'], int, Never, Never, Point].typ
+type T = Member[Literal['x'], int, Never, Never, Point].type
 a: T
 reveal_type(a)  # N: Revealed type is "builtins.int"
 

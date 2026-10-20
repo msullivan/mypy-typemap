@@ -1451,6 +1451,8 @@ def evaluate_comprehension(evaluator: TypeLevelEvaluator, typ: TypeForComprehens
     """Evaluate a TypeForComprehension.
 
     Evaluates *[Expr for var in T if Cond] to UnpackType(TupleType([...])).
+    An unbounded part of T (tuple[X, ...] or *tuple[X, ...]) is mapped
+    elementwise to *tuple[Expr[X], ...].
     """
 
     # Get the iterable type and expand it to a TupleType
@@ -1461,33 +1463,46 @@ def evaluate_comprehension(evaluator: TypeLevelEvaluator, typ: TypeForComprehens
         # that the enclosing variadic container collapses to Any.
         return UnpackType(AnyType(TypeOfAny.from_another_any, source_any=iter_proper))
 
+    if isinstance(iter_proper, Instance) and iter_proper.type.fullname == "builtins.tuple":
+        # tuple[X, ...] is iterated as tuple[*tuple[X, ...]]
+        iter_proper = evaluator.tuple_type([UnpackType(iter_proper)])
+
     if not isinstance(iter_proper, TupleType):
         # Can only iterate over tuple types
         return UninhabitedType()
 
-    # Process each item in the tuple
-    result_items: list[Type] = []
     assert typ.iter_var
-    for item in iter_proper.items:
-        # Substitute iter_var with item in element_expr and conditions
-        env = {typ.iter_var.id: item}
-        substituted_expr = expand_type(typ.element_expr, env)
-        substituted_conditions = [expand_type(cond, env) for cond in typ.conditions]
+    iter_var_id = typ.iter_var.id
 
-        # Evaluate all conditions
-        all_pass = True
-        for cond in substituted_conditions:
-            cond_result = eval_condition(evaluator, cond)
+    def map_item(item: Type) -> Type | None:
+        """Map one item through the comprehension, or None if filtered out."""
+        # Substitute iter_var with item in element_expr and conditions
+        env = {iter_var_id: item}
+        for cond in typ.conditions:
+            cond_result = eval_condition(evaluator, expand_type(cond, env))
             if cond_result is False:
-                all_pass = False
-                break
+                return None
             elif cond_result is None:
                 # Undecidable condition - raise Stuck
                 raise EvaluationStuck
+        return expand_type(typ.element_expr, env)
 
-        if all_pass:
-            # Include this element in the result
-            result_items.append(substituted_expr)
+    # Process each item in the tuple
+    result_items: list[Type] = []
+    for item in iter_proper.items:
+        if isinstance(item, UnpackType):
+            unpacked = get_proper_type(item.type)
+            if isinstance(unpacked, Instance) and unpacked.type.fullname == "builtins.tuple":
+                # *tuple[X, ...] maps X, producing *tuple[Y, ...]. If X is
+                # filtered out, it contributes nothing.
+                mapped = map_item(unpacked.args[0])
+                if mapped is not None:
+                    result_items.append(UnpackType(unpacked.copy_modified(args=[mapped])))
+                continue
+
+        mapped = map_item(item)
+        if mapped is not None:
+            result_items.append(mapped)
 
     return UnpackType(evaluator.tuple_type(result_items))
 

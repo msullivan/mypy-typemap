@@ -181,3 +181,73 @@ reveal_type(y)  # N: Revealed type is "tuple[builtins.list[builtins.int], builti
 
 [builtins fixtures/typelevel.pyi]
 [typing fixtures/typing-full.pyi]
+
+[case testTypeComprehensionOverUnboundedTuple]
+# A comprehension over tuple[X, ...] maps X, producing *tuple[Y, ...]
+
+x: tuple[*[list[T] for T in tuple[int, ...]]]
+reveal_type(x)  # N: Revealed type is "builtins.tuple[builtins.list[builtins.int], ...]"
+
+# Spliced into a larger tuple
+y: tuple[bytes, *[list[T] for T in tuple[int, ...]], str]
+reveal_type(y)  # N: Revealed type is "tuple[builtins.bytes, Unpack[builtins.tuple[builtins.list[builtins.int], ...]], builtins.str]"
+
+[builtins fixtures/typelevel.pyi]
+[typing fixtures/typing-full.pyi]
+
+[case testTypeComprehensionOverPartlyUnboundedTuple]
+# Fixed items around an unbounded *tuple[X, ...] are each mapped, and the
+# unbounded part maps to *tuple[Y, ...]
+
+x: tuple[*[list[T] for T in tuple[int, *tuple[str, ...], bool]]]
+reveal_type(x)  # N: Revealed type is "tuple[builtins.list[builtins.int], Unpack[builtins.tuple[builtins.list[builtins.str], ...]], builtins.list[builtins.bool]]"
+
+[builtins fixtures/typelevel.pyi]
+[typing fixtures/typing-full.pyi]
+
+[case testTypeComprehensionOverUnboundedTupleWithCondition]
+# The condition is evaluated once on X. If it fails, the unbounded part
+# contributes nothing; if it passes, it maps to *tuple[Y, ...].
+from typing import IsAssignable
+
+# Drops the unbounded str part, keeps int and bool (bool <: int)
+x: tuple[*[list[T] for T in tuple[int, *tuple[str, ...], bool] if IsAssignable[T, int]]]
+reveal_type(x)  # N: Revealed type is "tuple[builtins.list[builtins.int], builtins.list[builtins.bool]]"
+
+# Keeps only the unbounded str part
+y: tuple[*[list[T] for T in tuple[int, *tuple[str, ...], bool] if IsAssignable[T, str]]]
+reveal_type(y)  # N: Revealed type is "builtins.tuple[builtins.list[builtins.str], ...]"
+
+# Everything filtered out
+z: tuple[*[list[T] for T in tuple[int, ...] if IsAssignable[T, str]]]
+reveal_type(z)  # N: Revealed type is "tuple[()]"
+
+[builtins fixtures/typelevel.pyi]
+[typing fixtures/typing-full.pyi]
+
+[case testTypeComprehensionOverUnboundedTupleInUnion]
+# Unioning over a mapped unbounded tuple contributes its element type
+from typing import Union
+
+x: Union[*[list[T] for T in tuple[int, ...]]]
+reveal_type(x)  # N: Revealed type is "builtins.list[builtins.int]"
+
+y: Union[bytes, *[list[T] for T in tuple[int, *tuple[str, ...]]]]
+reveal_type(y)  # N: Revealed type is "builtins.bytes | builtins.list[builtins.int] | builtins.list[builtins.str]"
+
+[builtins fixtures/typelevel.pyi]
+[typing fixtures/typing-full.pyi]
+
+[case testTypeComprehensionOverUnboundedTupleInTypeAlias]
+# flags: --python-version 3.12
+
+type MapList[X] = tuple[*[list[T] for T in X]]
+
+x: MapList[tuple[int, ...]]
+reveal_type(x)  # N: Revealed type is "builtins.tuple[builtins.list[builtins.int], ...]"
+
+y: MapList[tuple[str, *tuple[int, ...]]]
+reveal_type(y)  # N: Revealed type is "tuple[builtins.list[builtins.str], Unpack[builtins.tuple[builtins.list[builtins.int], ...]]]"
+
+[builtins fixtures/typelevel.pyi]
+[typing fixtures/typing-full.pyi]

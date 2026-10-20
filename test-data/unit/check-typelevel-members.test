@@ -519,6 +519,27 @@ reveal_type(b)  # N: Revealed type is "Literal['x']"
 [builtins fixtures/typelevel.pyi]
 [typing fixtures/typing-full.pyi]
 
+[case testDotNotationUnknownAttribute]
+# flags: --python-version 3.12
+from typing import Member, Members, Param, Literal, Never
+
+class Point:
+    x: int
+    y: str
+
+a: Member[Literal['x'], int, Never, Never, Point].typ  # E: "Member" has no attribute "typ"
+reveal_type(a)  # N: Revealed type is "Any"
+
+b: Param[Literal['x'], int].quals  # E: "Param" has no attribute "quals"
+reveal_type(b)  # N: Revealed type is "Any"
+
+type Types = tuple[*[m.typ for m in Members[Point]]]  # E: "Member" has no attribute "typ"
+c: Types
+reveal_type(c)  # N: Revealed type is "tuple[Any, Any]"
+
+[builtins fixtures/typelevel.pyi]
+[typing fixtures/typing-full.pyi]
+
 [case testGetMemberBasic]
 from typing import GetMember, Member, Literal, Never
 

@@ -887,6 +887,10 @@ def _eval_type_get_attr(
         )
         return UninhabitedType()
 
+    name = extract_literal_string(evaluator.eval_proper(name_arg))
+    if name is None or name not in target.type.names:
+        raise TypeLevelError(f'"{target.type.name}" has no attribute "{name}"')
+
     # Direct call bypasses union lifting, which is correct for Member/Param access
     return _eval_get_member_type(target_arg, name_arg, evaluator=evaluator)
 

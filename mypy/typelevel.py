@@ -1397,13 +1397,14 @@ def evaluate_update_class(
 
     Called from semanal_main.py during the post-semanal pass. Eagerly evaluates
     member types so they are fully resolved before being stored on the target
-    class's TypeInfo.
+    class's TypeInfo. The first argument (the class being updated) is skipped;
+    the caller is responsible for checking it.
 
     Returns None if evaluation fails.
     """
     evaluator = TypeLevelEvaluator(api, ctx)
     try:
-        args = evaluator.flatten_args(typ.args)
+        args = evaluator.flatten_args(typ.args[1:])
     except (EvaluationStuck, EvaluationOverflow):
         return None
     return _extract_members(tuple(args), evaluator, eval_types=True)

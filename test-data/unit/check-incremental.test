@@ -390,6 +390,7 @@ MyProto = NewProtocol[
 
 T = TypeVar("T")
 def add_proto(cls: type[T]) -> UpdateClass[
+    T,
     Member[Literal["proto"], MyProto],
 ]:
     ...

@@ -117,6 +117,7 @@ type MyProto = NewProtocol[
 ]
 
 def add_proto[T](cls: type[T]) -> UpdateClass[
+    T,
     Member[Literal["proto"], MyProto],
 ]:
     ...

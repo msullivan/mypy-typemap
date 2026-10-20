@@ -741,7 +741,7 @@ type InitFnType[T] = typing.Member[
 ]
 
 
-def dataclass_ish[T](cls: type[T]) -> UpdateClass[InitFnType[T]]:
+def dataclass_ish[T](cls: type[T]) -> UpdateClass[T, InitFnType[T]]:
     ...
 
 
@@ -758,6 +758,7 @@ class Model:
     def __init_subclass__[T](
         cls: type[T],
     ) -> typing.UpdateClass[
+        T,
         # Add the computed __init__ function
         InitFnType[T],
     ]:

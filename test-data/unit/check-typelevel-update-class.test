@@ -10,6 +10,7 @@
 from typing import Literal, Never, Member, UpdateClass
 
 def add_x[T](cls: type[T]) -> UpdateClass[
+    T,
     Member[Literal["x"], int],
 ]:
     ...
@@ -30,6 +31,7 @@ reveal_type(Foo().y)  # N: Revealed type is "builtins.str"
 from typing import Literal, Never, Member, UpdateClass
 
 def remove_y[T](cls: type[T]) -> UpdateClass[
+    T,
     Member[Literal["y"], Never],
 ]:
     ...
@@ -52,6 +54,7 @@ from typing import Literal, Never, Member, UpdateClass
 
 class Base:
     def __init_subclass__[T](cls: type[T]) -> UpdateClass[
+        T,
         Member[Literal["tag"], str],
     ]:
         ...
@@ -66,6 +69,58 @@ reveal_type(Child().x)  # N: Revealed type is "builtins.int"
 [typing fixtures/typing-full.pyi]
 
 
+[case testUpdateClassWrongClass]
+# flags: --python-version 3.14
+from typing import Literal, Member, UpdateClass
+
+class Base:
+    def __init_subclass__[T](cls: type[T]) -> UpdateClass[
+        Base,
+        Member[Literal["tag"], str],
+    ]:
+        ...
+
+class Child(Base):  # E: UpdateClass: expected "Child" as the class to update, got "Base"
+    x: int
+
+Child.tag  # E: "type[Child]" has no attribute "tag"
+
+def add_x[T](cls: type[T]) -> UpdateClass[
+    int,
+    Member[Literal["x"], int],
+]:
+    ...
+
+@add_x
+class Foo:  # E: UpdateClass: expected "Foo" as the class to update, got "int"
+    y: str
+
+[builtins fixtures/typelevel.pyi]
+[typing fixtures/typing-full.pyi]
+
+
+[case testUpdateClassGenericClass]
+# flags: --python-version 3.14
+from typing import Literal, Member, UpdateClass
+
+class Base:
+    def __init_subclass__[T](cls: type[T]) -> UpdateClass[
+        T,
+        Member[Literal["tag"], str],
+    ]:
+        ...
+
+class Child[X](Base):
+    x: X
+
+reveal_type(Child[int].tag)  # N: Revealed type is "builtins.str"
+reveal_type(Child[int]().x)  # N: Revealed type is "builtins.int"
+
+[builtins fixtures/typelevel.pyi]
+[typing fixtures/typing-full.pyi]
+
+
+
 [case testUpdateClassEmptyBody_no_empty]
 # flags: --python-version 3.14
 # Evaluating the UpdateClass args in the generic function would get stuck
@@ -74,12 +129,12 @@ from typing import Attrs, Literal, Member, UpdateClass
 
 class Base:
     def __init_subclass__[T](cls: type[T]) -> UpdateClass[
-        *[Member[m.name, list[m.type]] for m in Attrs[T]]
+        T, *[Member[m.name, list[m.type]] for m in Attrs[T]]
     ]:
         pass
 
 def add_x[T](cls: type[T]) -> UpdateClass[
-    *[Member[m.name, list[m.type]] for m in Attrs[T]]
+    T, *[Member[m.name, list[m.type]] for m in Attrs[T]]
 ]:
     pass
 

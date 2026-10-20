@@ -597,7 +597,9 @@ def _apply_update_class_effects(
 ) -> None:
     """Apply UpdateClass effects from decorators and __init_subclass__ to a class."""
     from mypy.expandtype import expand_type
+    from mypy.messages import format_type
     from mypy.nodes import RefExpr
+    from mypy.subtypes import is_same_type
     from mypy.typelevel import MemberDef, evaluate_update_class
     from mypy.types import (
         CallableType,
@@ -650,6 +652,19 @@ def _apply_update_class_effects(
             ret_type = expand_type(ret_type, env)
 
         assert isinstance(ret_type, TypeOperatorType)
+
+        # The first argument must be the class being updated
+        cls_inst = _get_class_instance()
+        if not ret_type.args or not is_same_type(ret_type.args[0], cls_inst):
+            got = format_type(ret_type.args[0], self.options) if ret_type.args else "nothing"
+            self.fail(
+                f"UpdateClass: expected {format_type(cls_inst, self.options)}"
+                f" as the class to update, got {got}",
+                defn,
+                serious=True,
+            )
+            return
+
         members = evaluate_update_class(ret_type, self, defn)
         if members is not None:
             _apply_members(members)

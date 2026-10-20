@@ -220,9 +220,10 @@ class NewTypedDict(Generic[Unpack[_Ts]]):
     ...
 
 @_type_operator
-class UpdateClass(Generic[Unpack[_Ts]]):
+class UpdateClass(Generic[_T, Unpack[_Ts]]):
     """
     Update an existing class with new members.
+    The first argument must be the class being updated.
     Can only be used as the return type of a class decorator or __init_subclass__.
     Members with type Never are removed from the class.
     """

@@ -222,7 +222,6 @@ from mypy.types import (
     TypedDictType,
     TypeGuardedType,
     TypeOfAny,
-    TypeOperatorType,
     TypeTranslator,
     TypeType,
     TypeVarId,
@@ -1574,12 +1573,6 @@ class TypeChecker(NodeVisitor[None], TypeCheckerSharedApi):
                 and fdef.name in ("__init__", "__init_subclass__")
                 and not isinstance(get_proper_type(typ.ret_type), (NoneType, UninhabitedType))
                 and not self.dynamic_funcs[-1]
-                # Allow UpdateClass return type for __init_subclass__
-                and not (
-                    fdef.name == "__init_subclass__"
-                    and isinstance(typ.ret_type, TypeOperatorType)
-                    and typ.ret_type.type.name == "UpdateClass"
-                )
             ):
                 self.fail(message_registry.MUST_HAVE_NONE_RETURN_TYPE.format(fdef.name), item)
 

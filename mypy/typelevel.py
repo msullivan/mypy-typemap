@@ -144,6 +144,7 @@ class OperatorInfo:
 
     func: OperatorFunc
     expected_argc: int | None  # None for variadic
+    raw_args: bool = False  # Pass args through unevaluated
 
 
 _OPERATOR_EVALUATORS: dict[str, OperatorInfo] = {}
@@ -154,12 +155,16 @@ EXPANSION_ANY = AnyType(TypeOfAny.expansion_stuck)
 EXPANSION_OVERFLOW = AnyType(TypeOfAny.from_error)
 
 
-def register_operator(name: str) -> Callable[[OperatorFunc], OperatorFunc]:
+def register_operator(
+    name: str, *, raw_args: bool = False
+) -> Callable[[OperatorFunc], OperatorFunc]:
     """Decorator to register an operator evaluator.
 
     The function signature is inspected to determine the expected number of
     positional arguments (excluding the keyword-only ``evaluator`` parameter).
     If a ``*args`` parameter is found, the operator is treated as variadic.
+    If ``raw_args`` is set, the arguments are passed through without being
+    evaluated or flattened.
     """
 
     def decorator(func: OperatorFunc) -> OperatorFunc:
@@ -172,7 +177,7 @@ def register_operator(name: str) -> Callable[[OperatorFunc], OperatorFunc]:
             else len(sig.parameters) - 1
         )
 
-        _OPERATOR_EVALUATORS[name] = OperatorInfo(func=func, expected_argc=argc)
+        _OPERATOR_EVALUATORS[name] = OperatorInfo(func=func, expected_argc=argc, raw_args=raw_args)
         return func
 
     return decorator
@@ -312,7 +317,9 @@ class TypeLevelEvaluator:
         self._current_op = typ
         try:
             args = typ.args
-            if info.expected_argc is None:
+            if info.raw_args:
+                pass
+            elif info.expected_argc is None:
                 args = self.flatten_args(args)
                 # If a comprehension over Any landed in the flattened args,
                 # collapse the whole variadic operator call to Any.
@@ -1366,7 +1373,9 @@ def _eval_new_protocol(*args: Type, evaluator: TypeLevelEvaluator) -> Type:
     return Instance(info, [])
 
 
-@register_operator("UpdateClass")
+# raw_args, since the arguments may refer to type variables that are
+# unbound here (such as the class's type variable).
+@register_operator("UpdateClass", raw_args=True)
 def _eval_update_class(*args: Type, evaluator: TypeLevelEvaluator) -> Type:
     """UpdateClass should not be evaluated as a normal type operator.
 

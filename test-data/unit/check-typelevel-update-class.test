@@ -64,3 +64,24 @@ reveal_type(Child().x)  # N: Revealed type is "builtins.int"
 
 [builtins fixtures/typelevel.pyi]
 [typing fixtures/typing-full.pyi]
+
+
+[case testUpdateClassEmptyBody_no_empty]
+# flags: --python-version 3.14
+# Evaluating the UpdateClass args in the generic function would get stuck
+# on T; make sure that doesn't stop it from being treated as None.
+from typing import Attrs, Literal, Member, UpdateClass
+
+class Base:
+    def __init_subclass__[T](cls: type[T]) -> UpdateClass[
+        *[Member[m.name, list[m.type]] for m in Attrs[T]]
+    ]:
+        pass
+
+def add_x[T](cls: type[T]) -> UpdateClass[
+    *[Member[m.name, list[m.type]] for m in Attrs[T]]
+]:
+    pass
+
+[builtins fixtures/typelevel.pyi]
+[typing fixtures/typing-full.pyi]
